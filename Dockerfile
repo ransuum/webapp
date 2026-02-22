@@ -1,14 +1,30 @@
 # Build stage
 FROM maven:3.8.4-openjdk-17-slim AS build
-WORKDIR /app
+
+# Set the working directory
+WORKDIR /build
+
+# Copy files to the working directory
 COPY pom.xml .
-RUN mvn dependency:go-offline
 COPY src ./src
-RUN mvn clean package -DskipTests
+
+# Build the application
+RUN mvn clean package
 
 # Runtime stage
 FROM eclipse-temurin:17-jdk
+
+# Set the working directory
 WORKDIR /app
-COPY --from=build /app/target/webapp-0.0.1-SNAPSHOT.jar app.jar
+
+# Define an argument to accept the JAR file name
+ARG JAR_FILE=/build/target/webapp-0.0.1-SNAPSHOT.jar
+
+# Copy the packaged Spring Boot JAR file from the build stage to the working directory
+COPY --from=build ${JAR_FILE} /app/app.jar
+
+# Expose the application's port
 EXPOSE 8080
+
+# Start the Spring Boot application
 ENTRYPOINT ["java", "-jar", "app.jar"]
